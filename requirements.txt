@@ -1,0 +1,7 @@
+akshare
+pandas
+matplotlib
+requests
+notion-client
+pytz
+scipy
