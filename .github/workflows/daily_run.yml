@@ -32,6 +32,7 @@ jobs:
           python main.py
           python forward_curve.py
           python cftc_fetcher.py
+          python comex_comparison.py
 
       - name: Commit and Push Charts
         # 把生成的图片保存回 GitHub 仓库
