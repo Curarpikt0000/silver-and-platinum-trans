@@ -12,36 +12,66 @@ import pytz
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY")
 BRANCH = "main"
 
+# 1. 定义图片列表 (顺序决定 Notion 显示顺序)
 IMAGES_LIST = [
+    # --- A. 宏观对比 (新) ---
+    "charts_final/Fig_Compare_Gold.png",
+    "charts_final/Fig_Compare_Silver.png",
+
+    # --- B. 核心价差 ---
     "charts_final/1_Gold_Premium.png",
     "charts_final/4_Silver_Premium.png",
     "charts_final/8_Platinum_Premium.png",
+    
+    # --- C. 供需结构 ---
     "charts_final/Fig6_Forward_Structure.png",
+    
+    # --- D. 资金流向 (CFTC - COMEX) ---
     "charts_final/Fig_CFTC_Gold.png",
+    "charts_final/Fig_COMEX_Gold_OI.png",       # 新增
     "charts_final/Fig3_CFTC_Silver.png",
+    "charts_final/Fig_COMEX_Silver_OI.png",     # 新增
     "charts_final/Fig4_CFTC_Platinum.png",
+    "charts_final/Fig_COMEX_Platinum_OI.png",   # 新增
+
+    # --- E. 市场热度 (SHFE) ---
     "charts_final/2_Gold_Vol_OI.png",
-    "charts_final/3_Gold_Vol_Single.png",
     "charts_final/5_Silver_Vol_OI.png",
-    "charts_final/6_Silver_Vol_Single.png",
+    "charts_final/9_Platinum_Vol_OI.png",
     "charts_final/7_Silver_Stocks.png",
-    "charts_final/9_Platinum_Vol_OI.png"
+    "charts_final/3_Gold_Vol_Single.png",
+    "charts_final/6_Silver_Vol_Single.png"
 ]
 
+# 2. 标题美化字典
 TITLES = {
+    # 对比
+    "Fig_Compare_Gold.png": "⚔️ 黄金：中美走势强弱对比 (SHFE vs COMEX)",
+    "Fig_Compare_Silver.png": "⚔️ 白银：中美走势强弱对比 (SHFE vs COMEX)",
+    
+    # 溢价
     "1_Gold_Premium.png": "🥇 黄金：国内外盘溢价 (Gold Premium)",
-    "2_Gold_Vol_OI.png": "📊 黄金：成交量 vs 持仓量",
-    "3_Gold_Vol_Single.png": "📉 黄金：SHFE 成交量趋势",
     "4_Silver_Premium.png": "🥈 白银：国内外盘溢价 (Silver Premium)",
-    "5_Silver_Vol_OI.png": "📊 白银：成交量 vs 持仓量",
-    "6_Silver_Vol_Single.png": "📉 白银：SHFE 成交量趋势",
-    "7_Silver_Stocks.png": "📦 白银：上期所库存 (Warehouse Receipts)",
     "8_Platinum_Premium.png": "⚙️ 铂金：广期所 vs 现货溢价",
-    "9_Platinum_Vol_OI.png": "📊 铂金：成交量 vs 持仓量",
+    
+    # 结构
     "Fig6_Forward_Structure.png": "📈 远期曲线结构 (Forward Curve)",
-    "Fig_CFTC_Gold.png": "🇺🇸 CFTC 黄金投机净头寸",
-    "Fig3_CFTC_Silver.png": "🇺🇸 CFTC 白银投机净头寸",
-    "Fig4_CFTC_Platinum.png": "🇺🇸 CFTC 铂金投机净头寸"
+    
+    # CFTC
+    "Fig_CFTC_Gold.png": "🇺🇸 CFTC 黄金投机净头寸 (Net Specs)",
+    "Fig_COMEX_Gold_OI.png": "🇺🇸 COMEX 黄金总持仓 (Total OI)",
+    "Fig3_CFTC_Silver.png": "🇺🇸 CFTC 白银投机净头寸 (Net Specs)",
+    "Fig_COMEX_Silver_OI.png": "🇺🇸 COMEX 白银总持仓 (Total OI)",
+    "Fig4_CFTC_Platinum.png": "🇺🇸 CFTC 铂金投机净头寸 (Net Specs)",
+    "Fig_COMEX_Platinum_OI.png": "🇺🇸 COMEX 铂金总持仓 (Total OI)",
+
+    # SHFE 量仓
+    "2_Gold_Vol_OI.png": "📊 黄金(SHFE)：成交量 vs 持仓量",
+    "5_Silver_Vol_OI.png": "📊 白银(SHFE)：成交量 vs 持仓量",
+    "9_Platinum_Vol_OI.png": "📊 铂金(SHFE)：成交量 vs 持仓量",
+    "7_Silver_Stocks.png": "📦 白银：上期所库存 (Warehouse Receipts)",
+    "3_Gold_Vol_Single.png": "📉 黄金：成交量趋势 (Volume)",
+    "6_Silver_Vol_Single.png": "📉 白银：成交量趋势 (Volume)"
 }
 
 # ================= 🧠 V3.0 超级分析引擎 =================
@@ -71,11 +101,11 @@ def get_trend_health(symbol_code):
         
         # 逻辑判断
         if price_change > 0 and oi_change > 0:
-            return ("量价齐升 (新资金入场)", "🟢")
+            return ("量价齐升 (新多入场)", "🟢")
         elif price_change > 0 and oi_change < 0:
             return ("缩量上涨 (空头回补)", "⚠️")
         elif price_change < 0 and oi_change > 0:
-            return ("增仓下跌 (空头主动)", "🔴")
+            return ("增仓下跌 (新空入场)", "🔴")
         elif price_change < 0 and oi_change < 0:
             return ("缩量下跌 (多头止损)", "⚪️")
         else:
@@ -105,89 +135,137 @@ def get_forward_spread(symbol_root, near, far):
     except: return None
 
 def get_cftc_status(code):
-    # (保持原有逻辑，此处省略重复代码，直接用V2版本的即可，或者简写)
-    # 为了完整性，这里放简化版
-    return "数据暂缺" # 实际运行请保留V2版的CFTC下载逻辑
+    """获取 CFTC 资金流向 (实时下载分析)"""
+    try:
+        year = datetime.now().year
+        url = f"https://www.cftc.gov/files/dea/history/deacot{year}.zip"
+        r = requests.get(url, headers={'User-Agent': 'Mozilla/5.0'})
+        if r.status_code != 200: return "数据暂缺"
+
+        with zipfile.ZipFile(io.BytesIO(r.content)) as z:
+            with z.open(z.namelist()[0]) as f:
+                df = pd.read_csv(f, low_memory=False)
+                # 模糊匹配列名
+                col_code = next(c for c in df.columns if "Code" in str(c) or "CODE" in str(c))
+                col_long = next(c for c in df.columns if "Non" in str(c) and "Long" in str(c))
+                col_short = next(c for c in df.columns if "Non" in str(c) and "Short" in str(c))
+                
+                df['Code'] = df[col_code].astype(str).str.strip().str.zfill(6)
+                data = df[df['Code'] == code].copy()
+                if data.empty: return "无数据"
+                
+                # 计算净多头
+                data['Net'] = pd.to_numeric(data[col_long], errors='coerce') - pd.to_numeric(data[col_short], errors='coerce')
+                vals = data['Net'].tail(3).values
+                
+                if len(vals) < 2: return "数据不足"
+                
+                current = vals[-1]
+                prev = vals[-2]
+                diff = current - prev
+                
+                trend = "加仓" if diff > 0 else "减仓"
+                strength = "大幅" if abs(diff) > 5000 else "小幅"
+                return f"{trend} {strength} ({int(current):,}手)"
+    except:
+        return "获取失败"
 
 def generate_full_report():
     print("🧠 正在进行 V3.0 全维度量化分析...")
     
-    # 1. 黄金 Au
+    # 1. 黄金 Au (假设主力合约，可按需修改)
     au_spread = get_forward_spread("au", "2606", "2612")
     au_metrics = get_market_metrics("au", "au2606")
     au_health, au_icon = get_trend_health("au2606")
+    au_cftc = get_cftc_status("088691")
     
     # 2. 白银 Ag
     ag_spread = get_forward_spread("ag", "2606", "2612")
     ag_metrics = get_market_metrics("ag", "ag2606")
     ag_health, ag_icon = get_trend_health("ag2606")
+    ag_cftc = get_cftc_status("084691")
     
-    # 3. 铂金 Pt (主力合约可能变动，这里用泛指逻辑)
-    # 自动寻找主力合约逻辑略复杂，暂时硬编码热门的
+    # 3. 铂金 Pt (主力通常是 pt2605 或 pt2609)
+    # 为了稳健，我们分析 pt2605
     pt_health, pt_icon = get_trend_health("pt2605") 
     pt_metrics = get_market_metrics("pt", "pt2605")
+    pt_cftc = get_cftc_status("076651")
 
     lines = []
     lines.append("🤖 **AI 量化深度解析 (V3.0)**\n")
     
     # --- 黄金 ---
     lines.append("🥇 **黄金 (Gold):**")
-    lines.append(f"• **趋势状态:** {au_health} {au_icon}。需关注持仓量是否持续跟随价格。")
+    lines.append(f"• **趋势状态 (SHFE):** {au_health} {au_icon}")
     if au_spread:
-        lines.append(f"• **结构:** {'Contango (正常)' if au_spread>0 else 'Backwardation'}，价差 {au_spread:.2f}%。")
+        lines.append(f"• **期限结构:** {'Contango (正常)' if au_spread>0 else 'Backwardation'} (价差 {au_spread:.2f}%)")
+    lines.append(f"• **美盘资金 (CFTC):** {au_cftc}")
     
     # --- 白银 ---
     lines.append("\n🥈 **白银 (Silver): 焦点战场**")
-    lines.append(f"• **趋势状态:** {ag_health} {ag_icon}。")
-    if ag_spread and ag_spread < 0:
-        lines.append(f"• 🚨 **逼空信号:** 现货贴水 {ag_spread:.2f}% + 溢价飙升！这通常是库存枯竭的特征。")
+    lines.append(f"• **趋势状态 (SHFE):** {ag_health} {ag_icon}")
+    
+    if ag_spread is not None:
+        if ag_spread < 0:
+            lines.append(f"• 🚨 **逼空信号:** 现货贴水 {ag_spread:.2f}% (Backwardation)！现货极度缺货。")
+        else:
+            lines.append(f"• **期限结构:** Contango (价差 {ag_spread:.2f}%)")
+            
     if ag_metrics and ag_metrics['ratio'] > 3:
-        lines.append(f"• 🔥 **情绪:** 极度过热！换手率 {ag_metrics['ratio']:.1f}x，日内博弈剧烈。")
+        lines.append(f"• 🔥 **投机热度:** 极度过热！换手率 {ag_metrics['ratio']:.1f}x，日内博弈剧烈。")
         
+    lines.append(f"• **美盘资金 (CFTC):** {ag_cftc}")
+
     # --- 铂金 ---
     lines.append("\n⚙️ **铂金 (Platinum): 底部异动**")
-    lines.append(f"• **资金行为:** {pt_health} {pt_icon}。")
-    if pt_metrics and pt_metrics['oi'] > 30000: # 假设阈值
-        lines.append(f"• 📢 **吸筹确认:** 持仓量激增至 {int(pt_metrics['oi']):,} 手，显示主力资金正在底部大举建仓，值得重点关注！")
+    lines.append(f"• **趋势状态 (SHFE):** {pt_health} {pt_icon}")
+    lines.append(f"• **美盘资金 (CFTC):** {pt_cftc}")
+    
+    if pt_metrics and pt_metrics['oi'] > 20000: 
+        lines.append(f"• 📢 **吸筹确认:** 持仓量 {int(pt_metrics['oi']):,} 手。如果价格低位+持仓激增，通常是主力底部建仓信号。")
 
     # --- 总结 ---
     lines.append("\n💡 **Insight:**")
-    lines.append("1. **铂金**出现了明显的“增仓吸筹”现象，这是区别于金银的最独特信号。")
-    lines.append("2. **白银**处于“高溢价+高换手+贴水”的极端状态，注意短期爆发风险。")
+    lines.append("1. **铂金**若出现“量价齐升”或“增仓不跌”，是极佳的左侧关注点。")
+    lines.append("2. **白银**若维持高换手+贴水，注意短期波动率爆发风险。")
     
     return "\n".join(lines)
 
-# ================= 主程序 (保持不变) =================
-# ... (保留你之前的 update_page 函数，记得调用 generate_full_report) ...
-# 为了方便你复制，下面是 update_page 的部分：
+# ================= 主程序 =================
 
 def update_page():
     token = os.getenv("NOTION_TOKEN")
     database_id = os.getenv("NOTION_PAGE_ID")
-    if not token or not database_id: return
+    
+    if not token or not database_id:
+        print("❌ 错误：密钥缺失")
+        return
 
     notion = Client(auth=token)
     base_url = f"https://raw.githubusercontent.com/{GITHUB_REPOSITORY}/{BRANCH}"
+    
     beijing_tz = pytz.timezone('Asia/Shanghai')
     now = datetime.now(beijing_tz)
     today_str = now.strftime("%Y-%m-%d")
+    time_str = now.strftime("%H:%M")
+    report_title = f"📅 Daily Metal Report: {today_str}"
     
-    # 生成分析
+    # 1. 生成 AI 分析
     try:
         analysis_comment = generate_full_report()
     except Exception as e:
-        analysis_comment = "分析生成中..."
+        print(f"⚠️ 分析生成失败: {e}")
+        import traceback
+        traceback.print_exc()
+        analysis_comment = "🤖 分析生成暂时不可用"
 
-    # ... (后续创建 Page 的代码与之前完全一致) ...
-    # 只要确保上面定义了 generate_full_report 函数即可
-    
-    # 为了代码完整性，我把最后的 execution block 补全
+    # 2. 构造 Notion 内容块
     children_blocks = [
         {
             "object": "block",
             "type": "callout",
             "callout": {
-                "rich_text": [{"type": "text", "text": {"content": f"Generated at {now.strftime('%H:%M')}\n\n{analysis_comment}"}}],
+                "rich_text": [{"type": "text", "text": {"content": f"Generated at {time_str} (Beijing Time)\n\n{analysis_comment}"}}],
                 "icon": {"emoji": "🤖"}
             }
         },
@@ -195,10 +273,17 @@ def update_page():
     ]
     
     count = 0
+    # 3. 循环添加图片
     for img_path in IMAGES_LIST:
-        if not os.path.exists(img_path): continue
+        # 智能跳过不存在的图片 (防裂图)
+        if not os.path.exists(img_path): 
+            # print(f"跳过缺失图片: {img_path}")
+            continue
+        
         img_url = f"{base_url}/{img_path}?t={int(now.timestamp())}"
-        display_title = TITLES.get(img_path.split("/")[-1], img_path.split("/")[-1])
+        file_name = img_path.split("/")[-1]
+        display_title = TITLES.get(file_name, file_name)
+        
         children_blocks.append({
             "object": "block",
             "type": "heading_3",
@@ -210,17 +295,24 @@ def update_page():
             "image": {"type": "external", "external": {"url": img_url}}
         })
         count += 1
-        
-    if count > 0:
+
+    if count == 0: return
+
+    # 4. 推送到数据库
+    print(f"🚀 创建页面: {report_title} ...")
+    try:
         notion.pages.create(
             parent={"database_id": database_id},
             properties={
-                "Name": {"title": [{"text": {"content": f"📅 Daily Metal Report: {today_str}"}}]},
+                "Name": {"title": [{"text": {"content": report_title}}]},
                 "Date": {"date": {"start": today_str}},
                 "Comments": {"rich_text": [{"text": {"content": analysis_comment}}]}
             },
             children=children_blocks
         )
+        print("✅ 成功！")
+    except Exception as e:
+        print(f"❌ Notion API 报错: {e}")
 
 if __name__ == "__main__":
     update_page()
