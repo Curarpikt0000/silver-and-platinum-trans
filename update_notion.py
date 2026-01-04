@@ -7,8 +7,7 @@ import pytz
 GITHUB_REPOSITORY = os.getenv("GITHUB_REPOSITORY")
 BRANCH = "main"
 
-# 1. 定义图片列表 (文件路径)
-# 注意：这里列出所有想展示的图片
+# 1. 定义图片列表
 IMAGES_LIST = [
     # --- 核心概览 ---
     "charts_final/1_Gold_Premium.png",
@@ -32,8 +31,7 @@ IMAGES_LIST = [
     "charts_final/9_Platinum_Vol_OI.png"
 ]
 
-# 2. 定义美化标题 (文件名 -> 研报标题)
-# 如果不想显示英文文件名，就在这里改
+# 2. 标题美化字典
 TITLES = {
     "1_Gold_Premium.png": "🥇 黄金：国内外盘溢价 (Gold Premium)",
     "2_Gold_Vol_OI.png": "📊 黄金：成交量 vs 持仓量",
@@ -52,36 +50,33 @@ TITLES = {
 
 def update_page():
     token = os.getenv("NOTION_TOKEN")
-    page_id = os.getenv("NOTION_PAGE_ID")
+    # 注意：这里实际上是 DATABASE ID
+    database_id = os.getenv("NOTION_PAGE_ID") 
     
-    if not token or not page_id:
-        print("❌ 错误：未找到 NOTION_TOKEN 或 NOTION_PAGE_ID")
+    if not token or not database_id:
+        print("❌ 错误：未找到密钥")
         return
 
     notion = Client(auth=token)
     base_url = f"https://raw.githubusercontent.com/{GITHUB_REPOSITORY}/{BRANCH}"
     
-    # 北京时间
+    # 时间设置
     beijing_tz = pytz.timezone('Asia/Shanghai')
-    today_str = datetime.now(beijing_tz).strftime("%Y-%m-%d")
-    time_str = datetime.now(beijing_tz).strftime("%H:%M")
+    now = datetime.now(beijing_tz)
+    today_str = now.strftime("%Y-%m-%d") # 用于 Date 字段
+    time_str = now.strftime("%H:%M")
     
-    print(f"🚀 准备推送日报 ({today_str})...")
+    report_title = f"📅 Daily Metal Report: {today_str}"
     
-    # --- 构造 Notion 内容 ---
+    print(f"🚀 准备在数据库中创建新页面: {report_title}...")
+    
+    # --- 构造正文块 (Children Blocks) ---
     children_blocks = [
-        {
-            "object": "block",
-            "type": "heading_1",
-            "heading_1": {
-                "rich_text": [{"type": "text", "text": {"content": f"📅 Daily Metal Report: {today_str}"}}]
-            }
-        },
         {
             "object": "block",
             "type": "callout",
             "callout": {
-                "rich_text": [{"type": "text", "text": {"content": f"Update Time: {time_str} (Beijing Time)\nData Source: Akshare & CFTC.gov"}}],
+                "rich_text": [{"type": "text", "text": {"content": f"Generated at {time_str} (Beijing Time)\nSource: Akshare & CFTC"}}],
                 "icon": {"emoji": "🤖"}
             }
         },
@@ -93,22 +88,16 @@ def update_page():
     ]
     
     count = 0
-    # --- 循环处理图片 ---
     for img_path in IMAGES_LIST:
-        # 【关键修复】检查本地文件是否存在
-        # 如果 main.py 没生成这张图（比如库存数据挂了），这里就会跳过，防止Notion出现裂图
+        # 本地检查文件是否存在 (防裂图)
         if not os.path.exists(img_path):
-            print(f"⚠️ 文件未生成，跳过: {img_path}")
             continue
             
-        # 构造 URL (加时间戳防缓存)
-        img_url = f"{base_url}/{img_path}?t={int(datetime.now().timestamp())}"
-        
-        # 获取美化标题
+        img_url = f"{base_url}/{img_path}?t={int(now.timestamp())}"
         file_name = img_path.split("/")[-1]
-        display_title = TITLES.get(file_name, file_name) # 找不到就用文件名
+        display_title = TITLES.get(file_name, file_name)
         
-        # 添加标题块
+        # 标题
         children_blocks.append({
             "object": "block",
             "type": "heading_3",
@@ -116,7 +105,7 @@ def update_page():
                 "rich_text": [{"type": "text", "text": {"content": display_title}}]
             }
         })
-        # 添加图片块
+        # 图片
         children_blocks.append({
             "object": "block",
             "type": "image",
@@ -127,15 +116,33 @@ def update_page():
         })
         count += 1
 
-    # 发送请求
+    if count == 0:
+        print("⚠️ 没有生成图片，取消创建页面。")
+        return
+
+    # --- 发送请求：创建数据库页面 (Create Page in Database) ---
     try:
-        if count > 0:
-            notion.blocks.children.append(block_id=page_id, children=children_blocks)
-            print(f"✅ 成功推送 {count} 张图表到 Notion！")
-        else:
-            print("⚠️ 没有图片生成，取消推送。")
+        notion.pages.create(
+            parent={"database_id": database_id},
+            properties={
+                # 1. 对应 Notion 里的 "Name" 列 (Title 类型)
+                "Name": {
+                    "title": [
+                        {"text": {"content": report_title}}
+                    ]
+                },
+                # 2. 对应 Notion 里的 "Date" 列 (Date 类型)
+                "Date": {
+                    "date": {"start": today_str}
+                }
+            },
+            # 3. 页面里的内容
+            children=children_blocks
+        )
+        print(f"✅ 成功在数据库中创建页面！包含 {count} 张图表。")
     except Exception as e:
         print(f"❌ Notion API 报错: {e}")
+        print("💡 提示: 请检查 Notion 数据库的列名是否真的是 'Name' 和 'Date' (区分大小写)")
 
 if __name__ == "__main__":
     update_page()
