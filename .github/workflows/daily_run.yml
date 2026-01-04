@@ -1,0 +1,51 @@
+name: Metal Quant Daily Run
+
+on:
+  schedule:
+    # 每天北京时间早上 8:00 (UTC 00:00) 运行
+    - cron: '0 0 * * *'
+  workflow_dispatch: # 允许手动点击按钮运行
+
+permissions:
+  contents: write # 允许提交代码(保存图片)
+
+jobs:
+  build_and_report:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Data Analysis Scripts
+        # ---以此处为准，对应你截图里的文件名---
+        run: |
+          python main.py
+          python forward_curve.py
+          python cftc_fetcher.py
+
+      - name: Commit and Push Charts
+        # 把生成的图片保存回 GitHub 仓库
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add charts_final/*.png
+          # 如果有变化就提交，没变化就不报错
+          git commit -m "Auto-update daily charts" || echo "No changes to commit"
+          git push
+
+      - name: Upload to Notion
+        # 最后一步：把图片链接发给 Notion
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+        run: python update_notion.py
